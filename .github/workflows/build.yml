@@ -1,7 +1,8 @@
 name: build-exe
 on:
   push:
-    tags: ["v*"]
+    branches: [main]
+    paths: ["app/**", "requirements.txt", ".github/workflows/**"]
   workflow_dispatch:
 permissions:
   contents: write
@@ -14,16 +15,21 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "v=$(python -c "import sys;sys.path.insert(0,'app');import version;print(version.VERSION)")" >> $GITHUB_OUTPUT
       - name: Build
         working-directory: app
         run: pyinstaller --noconfirm --onefile --windowed --name GistExpenseHelper --add-data "ui;ui" main.py
-      - name: Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: app/dist/GistExpenseHelper.exe
-          generate_release_notes: true
       - uses: actions/upload-artifact@v4
         with:
           name: GistExpenseHelper
           path: app/dist/GistExpenseHelper.exe
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          name: 지출 건 도우미 ${{ steps.ver.outputs.v }}
+          files: app/dist/GistExpenseHelper.exe
+          generate_release_notes: true
