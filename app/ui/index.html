@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>지출 건 도우미</title>
+<style>
+:root{--ink:#16201d;--ink2:#56625e;--ink3:#8b9692;--line:#e4e8e6;--bg:#f5f6f4;--card:#fff;--accent:#085041;--accent2:#0f6e56;--soft:#e1f5ee;--warn:#854f0b;--warnbg:#faeeda;--err:#a32d2d;--errbg:#fcebeb;--r:10px}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;color:var(--ink);background:var(--bg);font-size:14px;-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:232px 1fr;height:100vh}
+aside{background:#0c1714;color:#c9d6d1;display:flex;flex-direction:column;padding:22px 14px}
+.brand{display:flex;gap:10px;align-items:center;padding:0 8px 26px}
+.logo{width:34px;height:34px;border-radius:9px;background:#1d9e75;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600}
+.brand b{display:block;color:#fff;font-weight:500;font-size:15px}.brand small{color:#7f918b;font-size:11px}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav button{all:unset;cursor:pointer;padding:10px 12px;border-radius:8px;font-size:13.5px;display:flex;justify-content:space-between;align-items:center}
+.nav button:hover{background:#15241f}.nav button.on{background:#1a2e28;color:#fff}
+.badge{background:#1d9e75;color:#fff;font-size:11px;border-radius:10px;padding:1px 8px}
+.side-foot{margin-top:auto;font-size:11px;color:#6d7f79;padding:0 8px;line-height:1.7}
+.side-foot .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;background:#5f6b67}
+.side-foot .dot.ok{background:#1d9e75}
+main{overflow:auto;padding:28px 36px 40px}
+h1{font-size:21px;font-weight:600;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--ink2);font-size:13px;margin:0 0 22px}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px}
+.card h2{font-size:13px;font-weight:600;color:var(--ink2);margin:0 0 14px;letter-spacing:.01em}
+.drop{border:1.5px dashed #c5cec9;border-radius:12px;padding:26px;text-align:center;color:var(--ink2);cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent2);background:var(--soft);color:var(--accent)}
+.drop b{display:block;color:var(--ink);font-weight:500;margin-bottom:4px}
+.file{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-top:10px}
+.file .ic{width:30px;height:38px;border-radius:5px;background:#faece7;color:#993c1d;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.file .nm{flex:1;min-width:0}.file .nm div:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.file .nm div:last-child{font-size:11.5px;color:var(--accent2)}
+.file select{width:110px}
+.file .x{cursor:pointer;color:var(--ink3);padding:4px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:4px}
+.f label{display:block;font-size:11.5px;color:var(--ink3);margin-bottom:5px}
+.f.full{grid-column:1/-1}
+input,select{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;padding:0 11px;font:inherit;color:var(--ink);background:#fff;outline:none}
+input:focus,select:focus{border-color:var(--accent2);box-shadow:0 0 0 3px rgba(29,158,117,.12)}
+input.auto{background:#f7fbf9}
+.amount{font-size:18px;font-weight:600;text-align:right}
+.preview{background:#f7f8f7;border-radius:12px;padding:14px 16px;font-size:12.5px;line-height:1.65}
+.preview .k{color:var(--ink3);font-size:11px;margin-top:10px}.preview .k:first-child{margin-top:0}
+.preview .v{word-break:break-all;color:var(--ink)}
+.row{display:flex;gap:10px;align-items:center}
+.btn{all:unset;cursor:pointer;height:42px;padding:0 18px;border-radius:10px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);background:#fff}
+.btn:hover{background:#f2f4f3}
+.btn.primary{background:var(--accent);color:#e1f5ee;border-color:var(--accent);flex:1}
+.btn.primary:hover{background:#0a5f4d}
+.btn.sm{height:32px;padding:0 12px;font-size:12.5px;border-radius:8px}
+.link{color:var(--accent2);cursor:pointer;font-size:12px}
+.toast{position:fixed;right:28px;bottom:28px;background:#0c1714;color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;opacity:0;transform:translateY(8px);transition:.2s;max-width:420px}
+.toast.on{opacity:1;transform:none}.toast.err{background:var(--err)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.metric span{font-size:11.5px;color:var(--ink3)}.metric b{display:block;font-size:22px;font-weight:600;margin-top:2px}
+.toolbar{display:flex;gap:10px;margin-bottom:14px}.toolbar select{width:200px}
+.item{display:grid;grid-template-columns:minmax(0,1.6fr) 120px minmax(0,2fr) 90px;gap:16px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line)}
+.item .t{font-weight:500}.item .m{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.item .amt{text-align:right;font-weight:600}
+.steps{display:flex;gap:3px;margin-bottom:8px}.steps i{flex:1;height:4px;border-radius:2px;background:#e1e5e3}.steps i.on{background:#1d9e75}
+.sel3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.sel3 select{height:32px;font-size:12px;padding:0 6px}
+.next{font-size:11.5px;margin-top:6px;color:var(--warn)}
+.empty{text-align:center;color:var(--ink3);padding:50px 0}
+.hint{font-size:12px;color:var(--ink2);line-height:1.7}
+.ok{color:var(--accent2)}
+.update{display:none;background:var(--soft);color:var(--accent);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:13px;justify-content:space-between;align-items:center}
+section{display:none}section.on{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand"><div class="logo">G</div><div><b>지출 건 도우미</b><small>기술경영촉진 · TLO 혁신형</small></div></div>
+  <div class="nav">
+    <button data-tab="new" class="on">새 건 등록</button>
+    <button data-tab="dash">진행 대시보드 <span class="badge" id="pendingCount">0</span></button>
+    <button data-tab="set">설정</button>
+  </div>
+  <div class="side-foot"><div><span class="dot" id="connDot"></span><span id="connText">시트 미연결</span></div><div id="rootText">상위 폴더 미지정</div><div id="verText"></div></div>
+</aside>
+<main>
+  <div class="update" id="updateBar"><span id="updateText"></span><span class="btn sm" id="updateBtn">지금 업데이트</span></div>
+
+  <section id="new" class="on">
+    <h1>새 건 등록</h1><p class="sub">증빙 파일을 넣고 과제와 세목만 고르면 폴더 정리와 시트 등록이 한 번에 끝납니다.</p>
+    <div class="grid">
+      <div class="card">
+        <h2>증빙 파일</h2>
+        <div class="drop" id="drop"><b>파일을 끌어다 놓거나 클릭해서 선택</b>PDF · 엑셀 · 사진 · 한글</div>
+        <div id="files"></div>
+        <h2 style="margin-top:22px">집행 정보</h2>
+        <div class="fields">
+          <div class="f"><label>과제</label><select id="task"></select></div>
+          <div class="f"><label>세목</label><select id="semok"></select></div>
+          <div class="f"><label>업체 (자동 인식)</label><input id="vendor" class="auto"></div>
+          <div class="f"><label>사업자번호</label><input id="biz_no" class="auto" placeholder="000-00-00000"></div>
+          <div class="f full"><label>품목 (자동 인식)</label><input id="item" class="auto"></div>
+          <div class="f"><label>사용일자</label><input id="date" type="date" class="auto"></div>
+          <div class="f"><label>금액 (원)</label><input id="amount" class="auto amount"></div>
+          <div class="f"><label>결제수단</label><select id="pay"></select></div>
+          <div class="f"><label>ZEUS 단계</label><select id="zeus"></select></div>
+          <div class="f full"><label>비고 (선택)</label><input id="memo" placeholder="주문요청 메일(10.20) 등"></div>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <h2>저장 미리보기</h2>
+          <div class="preview">
+            <div class="k">폴더</div><div class="v" id="pvFolder">-</div>
+            <div class="k">파일명</div><div class="v" id="pvFile">-</div>
+            <div class="k">결재 제목 · 적요</div><div class="v" id="pvTitle">-</div>
+            <div class="k">시트 집행 내역</div><div class="v" id="pvUsage">-</div>
+          </div>
+          <div class="row" style="margin-top:16px"><span class="btn primary" id="saveBtn">저장하고 시트에 등록</span><span class="btn" id="copyBtn">제목 복사</span></div>
+          <div id="saveResult" class="hint" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="dash">
+    <h1>진행 대시보드</h1><p class="sub">단계를 바꾸고 적용하면 시트와 폴더명 꼬리표가 함께 바뀝니다.</p>
+    <div class="metrics">
+      <div class="metric"><span>처리 대기</span><b id="mTotal">-</b></div>
+      <div class="metric"><span>ZEUS 진행 중</span><b id="mZeus">-</b></div>
+      <div class="metric"><span>이지바로 미결의</span><b id="mEz">-</b></div>
+      <div class="metric"><span>대기 금액</span><b id="mAmt">-</b></div>
+    </div>
+    <div class="card">
+      <div class="toolbar"><select id="dashTask"><option value="">전체 과제</option></select><span class="btn sm" id="reloadBtn">새로고침</span></div>
+      <div id="list"><div class="empty">시트를 연결하면 진행 중인 건이 표시됩니다.</div></div>
+    </div>
+  </section>
+
+  <section id="set">
+    <h1>설정</h1><p class="sub">처음 한 번만 설정하면 됩니다.</p>
+    <div class="grid">
+      <div class="card">
+        <h2>1. 상위 폴더</h2>
+        <p class="hint">연구비 집행 폴더를 지정하면 과제 · 비목 폴더를 시트 기준으로 자동 생성합니다.</p>
+        <div class="row"><input id="rootIn" readonly><span class="btn" id="rootBtn">폴더 선택</span></div>
+        <h2 style="margin-top:24px">2. 구글시트 연결</h2>
+        <div class="f" style="margin-bottom:10px"><label>웹앱 주소</label><input id="urlIn" placeholder="https://script.google.com/macros/s/..../exec"></div>
+        <div class="f" style="margin-bottom:14px"><label>연결키</label><input id="tokenIn"></div>
+        <div class="row"><span class="btn primary" id="connBtn">연결하고 설정 불러오기</span></div>
+        <div id="connResult" class="hint" style="margin-top:10px"></div>
+      </div>
+      <div class="card">
+        <h2>프로그램 정보</h2>
+        <p class="hint" id="infoText"></p>
+        <span class="btn sm" id="checkBtn">업데이트 확인</span>
+        <h2 style="margin-top:24px">불러온 기준 정보</h2>
+        <p class="hint" id="settingsInfo">-</p>
+        <span class="btn sm" id="refreshBtn">시트에서 다시 불러오기</span>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+let S={settings:{}},files=[],items=[];
+const api=()=>window.pywebview.api;
+const won=n=>(Number(String(n).replace(/[^\d]/g,''))||0).toLocaleString('ko-KR');
+function toast(msg,err){const t=$('toast');t.textContent=msg;t.className='toast on'+(err?' err':'');clearTimeout(t._h);t._h=setTimeout(()=>t.className='toast',3200)}
+function opts(sel,list,val){sel.innerHTML=list.map(v=>`<option${v===val?' selected':''}>${v}</option>`).join('')}
+function yymmdd(iso){return (iso||'').replace(/-/g,'').slice(2,8)}
+function clean(s){return (s||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim()}
+function semokInfo(){return (S.settings.semoks||[]).find(x=>x.semok===$('semok').value)||{}}
+function bimokFolder(b){const m=(b||'').match(/(\d+)\s*[.)]?\s*(.+)/);return m?`${m[1]}_${m[2]}`:(b||'기타')}
+
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.tab));
+  if(b.dataset.tab==='dash')loadPending();
+});
+
+function render(){
+  const st=S.settings||{},ch=st.choices||{};
+  const tasks=(st.tasks||[]).map(t=>t.name);
+  if(tasks.length){opts($('task'),tasks,$('task').value);opts($('dashTask'),['전체 과제',...tasks],$('dashTask').value)}
+  if(st.semoks)opts($('semok'),st.semoks.map(s=>s.semok),$('semok').value||'연구시설 구입비/연구재료제작비');
+  opts($('pay'),ch['결제수단']||['세금계산서','카드','현금','계좌이체'],$('pay').value);
+  opts($('zeus'),ch['ZEUS(구매 등)']||['미신청','견적서','주문서'],$('zeus').value||'견적서');
+  $('connDot').className='dot'+(S.connected?' ok':'');$('connText').textContent=S.connected?'시트 연결됨':'시트 미연결';
+  $('rootText').textContent=S.root?('폴더 · '+S.root.split(/[\\/]/).pop()):'상위 폴더 미지정';
+  $('verText').textContent='버전 '+S.version;$('rootIn').value=S.root||'';
+  $('infoText').textContent=`현재 버전 ${S.version}. 실행할 때마다 새 버전을 확인합니다.`;
+  $('settingsInfo').textContent=st.tasks?`과제 ${st.tasks.length}개 · 세목 ${st.semoks.length}개`:'아직 불러오지 않았습니다.';
+  preview();
+}
+
+function form(){
+  return {task:$('task').value,semok:$('semok').value,vendor:clean($('vendor').value),biz_no:$('biz_no').value.trim(),
+    item:clean($('item').value),date:$('date').value,amount:$('amount').value,pay:$('pay').value,zeus:$('zeus').value,
+    memo:$('memo').value.trim(),doc_type:files[0]?.doc_type||'증빙자료',files}
+}
+function preview(){
+  const d=form(),si=semokInfo(),no=(d.task||'').split(' ')[0],bi=si.budget_item||d.semok;
+  const core=d.item?`${d.vendor}_${d.item}`:d.vendor;
+  $('pvFolder').textContent=d.task?`${d.task} / ${bimokFolder(si.bimok)} / ${clean(`${yymmdd(d.date)}_${core}(${won(d.amount)}원)`)}`:'-';
+  $('pvFile').innerHTML=files.length?files.map(f=>clean(`(${f.doc_type}) [${no}] ${bi}-${core}(${yymmdd(d.date)})`)+'.'+f.filename.split('.').pop()).join('<br>'):'-';
+  let c=`${d.vendor} ${d.item}`.trim();if(c.length>22){const cut=c.slice(0,22);c=cut.slice(8).includes(' ')?cut.slice(0,cut.lastIndexOf(' ')):cut.trim()}
+  $('pvTitle').textContent=d.task?`[${no}] ${bi}(${yymmdd(d.date)})_${c}`:'-';
+  $('pvUsage').textContent=d.item&&d.vendor?`${d.item} 구매(${d.vendor})`:(d.item||d.vendor||'-');
+}
+['task','semok','vendor','item','date','amount','pay','zeus','memo','biz_no'].forEach(id=>$(id).addEventListener('input',preview));
+$('amount').addEventListener('blur',()=>{if($('amount').value)$('amount').value=won($('amount').value)});
+
+function renderFiles(){
+  const types=['견적서','거래명세서','세금계산서','계산서','영수증','주문서','청구서','검수사진','증빙서','증빙자료'];
+  $('files').innerHTML=files.map((f,i)=>`<div class="file"><div class="ic">${f.filename.split('.').pop().toUpperCase().slice(0,4)}</div>
+   <div class="nm"><div>${f.filename}</div><div>${f.text_found?('인식 정확도 '+f.confidence):'글자 없음 · 직접 입력'}</div></div>
+   <select data-i="${i}">${types.map(t=>`<option${t===f.doc_type?' selected':''}>${t}</option>`).join('')}</select>
+   <span class="x" data-x="${i}">✕</span></div>`).join('');
+  $('files').querySelectorAll('select').forEach(s=>s.onchange=()=>{files[s.dataset.i].doc_type=s.value;preview()});
+  $('files').querySelectorAll('.x').forEach(x=>x.onclick=()=>{files.splice(x.dataset.x,1);renderFiles()});
+  preview();
+}
+window.onFilesExtracted=function(res){
+  if(!res||!res.length)return;
+  const first=!files.length;files.push(...res);
+  const main=res.find(r=>r.doc_type==='견적서')||res[0];
+  if(first||!$('vendor').value){
+    if(main.vendor)$('vendor').value=main.vendor;if(main.biz_no)$('biz_no').value=main.biz_no;
+    if(main.item)$('item').value=main.item;if(main.date)$('date').value=main.date;
+    if(main.amount)$('amount').value=won(main.amount);
+  }
+  renderFiles();toast(`${res.length}개 파일 인식 완료`);
+};
+$('drop').onclick=async()=>window.onFilesExtracted(await api().pick_files());
+const dz=$('drop');['dragenter','dragover'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.add('over')}));
+['dragleave','drop'].forEach(e=>dz.addEventListener(e,ev=>{ev.preventDefault();dz.classList.remove('over')}));
+document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>e.preventDefault());
+
+$('saveBtn').onclick=async()=>{
+  const d=form();
+  if(!files.length)return toast('증빙 파일을 먼저 넣어 주세요.',1);
+  if(!d.vendor||!d.amount)return toast('업체와 금액을 확인해 주세요.',1);
+  $('saveBtn').textContent='저장 중…';
+  const r=await api().save(d);$('saveBtn').textContent='저장하고 시트에 등록';
+  if(!r.ok)return toast(r.error,1);
+  await api().copy_text(r.title);
+  $('saveResult').innerHTML=`<span class="ok">저장 완료</span> · ${r.sheet||'시트 미연결'} · 결재 제목 복사됨 <span class="link" id="openF">폴더 열기</span>`;
+  $('openF').onclick=()=>api().open_folder(r.folder);
+  toast('저장했습니다. 결재 제목이 복사됐습니다.');
+  files=[];renderFiles();['vendor','biz_no','item','amount','memo'].forEach(id=>$(id).value='');
+};
+$('copyBtn').onclick=async()=>{await api().copy_text($('pvTitle').textContent);toast('결재 제목을 복사했습니다.')};
+
+function stepCount(it){const z=['미신청','견적서','주문서','1차검수','검수 중','증빙자료','결재 진행중','결재 완료','이지바로전송'];
+  let n=Math.max(0,z.indexOf(it.zeus));n=Math.round(n/8*3);if(it.ezbaro==='결의')n=4;if(it.ezbaro==='집행')n=5;return n}
+async function loadPending(){
+  if(!S.connected)return;
+  $('list').innerHTML='<div class="empty">불러오는 중…</div>';
+  const r=await api().pending();if(!r.ok){$('list').innerHTML=`<div class="empty">${r.error}</div>`;return}
+  items=r.items;$('pendingCount').textContent=items.length;drawList();
+}
+function drawList(){
+  const ch=S.settings.choices||{},f=$('dashTask').value;
+  const list=items.filter(it=>!f||f==='전체 과제'||it.task===f);
+  $('mTotal').textContent=list.length+'건';
+  $('mZeus').textContent=list.filter(i=>i.zeus&&i.zeus!=='이지바로전송').length+'건';
+  $('mEz').textContent=list.filter(i=>i.ezbaro==='미결의').length+'건';
+  $('mAmt').textContent=won(list.reduce((a,i)=>a+(Number(String(i.amount).replace(/[^\d]/g,''))||0),0));
+  if(!list.length){$('list').innerHTML='<div class="empty">처리 대기 중인 건이 없습니다.</div>';return}
+  const sel=(k,arr,v,i)=>`<select data-k="${k}" data-i="${i}">${[...new Set([v,...arr])].filter(x=>x!==undefined).map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}</select>`;
+  $('list').innerHTML=list.map(it=>{const i=items.indexOf(it),n=stepCount(it);return `<div class="item">
+   <div><div class="t">${it.usage||'-'}</div><div class="m">${it.task} · ${it.semok||''} · ${it.date||''}</div></div>
+   <div class="amt">${won(it.amount)}원</div>
+   <div><div class="steps">${[0,1,2,3,4].map(k=>`<i class="${k<n?'on':''}"></i>`).join('')}</div>
+    <div class="sel3">${sel('zeus',ch['ZEUS(구매 등)']||[],it.zeus,i)}${sel('ezbaro',ch['이지바로']||[],it.ezbaro,i)}${sel('progress',ch['진행상황']||[],it.progress,i)}</div>
+    <div class="next">${it.next?('다음 · '+it.next):''}</div></div>
+   <div style="text-align:right"><span class="btn sm" data-apply="${i}">적용</span></div></div>`}).join('');
+  $('list').querySelectorAll('select').forEach(s=>s.onchange=()=>{items[s.dataset.i][s.dataset.k]=s.value});
+  $('list').querySelectorAll('[data-apply]').forEach(b=>b.onclick=async()=>{
+    const it=items[b.dataset.apply];b.textContent='…';const r=await api().update_stage(it);b.textContent='적용';
+    if(!r.ok)return toast(r.error,1);it.next=r.next;toast('반영했습니다'+(r.renamed?` · 폴더명: ${r.renamed}`:''));drawList();
+  });
+}
+$('dashTask').onchange=drawList;$('reloadBtn').onclick=loadPending;
+
+$('rootBtn').onclick=async()=>{const r=await api().choose_root();if(r.ok){S.root=r.root;render();toast(`폴더 지정 완료${r.made?` · 폴더 ${r.made}개 생성`:''}`)}};
+$('connBtn').onclick=async()=>{
+  $('connResult').textContent='연결 중…';
+  const r=await api().connect($('urlIn').value,$('tokenIn').value);
+  if(!r.ok){$('connResult').textContent='연결 실패: '+r.error;return}
+  S.connected=true;S.settings=r.settings;render();
+  $('connResult').innerHTML=`<span class="ok">연결 완료</span> · 과제 ${r.settings.tasks.length}개${r.made?` · 폴더 ${r.made}개 생성`:''}`;
+};
+$('refreshBtn').onclick=async()=>{const r=await api().refresh_settings();if(!r.ok)return toast(r.error,1);S.settings=r.settings;render();toast('기준 정보를 다시 불러왔습니다.')};
+async function checkUpdate(manual){
+  const u=await api().check_update();
+  if(u.available){$('updateBar').style.display='flex';$('updateText').textContent=`새 버전 ${u.latest}이 있습니다.`;
+    $('updateBtn').onclick=async()=>{$('updateBtn').textContent='내려받는 중…';const r=await api().do_update(u.url);if(!r.ok)toast(r.error,1)}}
+  else if(manual)toast('최신 버전입니다.');
+}
+$('checkBtn').onclick=()=>checkUpdate(true);
+
+window.addEventListener('pywebviewready',async()=>{
+  S=await api().state();$('date').value=new Date().toISOString().slice(0,10);render();
+  if(!S.root||!S.connected)document.querySelector('[data-tab=set]').click();
+  else loadPending();
+  checkUpdate(false);
+});
+</script>
+</body>
+</html>
