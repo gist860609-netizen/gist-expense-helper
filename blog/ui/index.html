@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8"><title>블로그 자동 작성기</title>
+<style>
+:root{--ink:#1d1b20;--ink2:#625b66;--ink3:#9a93a0;--line:#ece8ef;--bg:#faf8fb;--accent:#d4537e;--accent2:#993556;--soft:#fbeaf0}
+*{box-sizing:border-box}body{margin:0;font-family:"Pretendard","Malgun Gothic",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+.wrap{max-width:680px;margin:0 auto;padding:28px 24px}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+.logo{width:38px;height:38px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600}
+.head b{display:block;font-size:17px;font-weight:600}.head small{color:var(--ink3);font-size:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.card h2{font-size:12.5px;color:var(--ink2);font-weight:600;margin:0 0 12px}
+.pick{display:flex;gap:10px;align-items:center}.pick .path{flex:1;font-size:12.5px;color:var(--ink2);word-break:break-all}
+.btn{all:unset;cursor:pointer;height:40px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:500;display:inline-flex;align-items:center}
+.btn:hover{background:#f5f2f6}.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;flex:1;justify-content:center}
+.btn.primary:hover{background:var(--accent2)}.btn.stop{color:#a32d2d}
+.title{font-size:16px;font-weight:600;margin:12px 0 8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.chip{background:var(--soft);color:var(--accent2);border-radius:20px;padding:3px 10px;font-size:12px}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{font-size:11.5px;color:var(--ink3);display:block;margin-bottom:4px}
+input,select{width:100%;height:36px;border:1px solid var(--line);border-radius:8px;padding:0 10px;font:inherit}
+.row{display:flex;gap:10px}
+#log{background:#1d1b20;color:#e9e3ec;border-radius:12px;padding:14px;height:220px;overflow:auto;font-size:12.5px;line-height:1.7;font-family:Consolas,"Malgun Gothic",monospace}
+.note{font-size:12px;color:var(--ink2);line-height:1.7;margin-top:10px}
+.update{display:none;background:var(--soft);color:var(--accent2);padding:10px 14px;border-radius:10px;margin-bottom:14px;justify-content:space-between;align-items:center}
+</style></head><body><div class="wrap">
+<div class="head"><div class="logo">M</div><div><b>블로그 자동 작성기</b><small id="ver"></small></div></div>
+<div class="update" id="upd"><span id="updText"></span><span class="btn" id="updBtn">업데이트</span></div>
+<div class="card"><h2>1. 원고 폴더</h2>
+ <div class="pick"><div class="path" id="path">final.md가 있는 글 폴더를 고르세요</div><span class="btn" id="pickBtn">폴더 선택</span></div>
+ <div id="summary"></div></div>
+<div class="card"><h2>2. 옵션</h2><div class="opts">
+ <div><label>블로그 아이디</label><input id="blogId"></div>
+ <div><label>입력 속도</label><select id="speed"><option value="1.4">천천히 (사람에 가깝게)</option><option value="1">보통</option><option value="0.7">빠르게</option></select></div>
+ <div><label>크롬 창</label><select id="minimize"><option value="1">최소화하고 진행</option><option value="0">보이게 진행</option></select></div>
+</div></div>
+<div class="row" style="margin-bottom:14px"><span class="btn primary" id="startBtn">자동 작성 시작 (임시저장까지)</span><span class="btn stop" id="stopBtn">중지</span><span class="btn" id="outBtn">결과 폴더</span></div>
+<div id="log"></div>
+<p class="note">붙여넣기 없이 한 글자씩 입력하고, 색·크기·사진·영상·태그는 에디터 버튼으로 넣습니다. 발행은 하지 않습니다. 처음 한 번은 열린 크롬 창에서 네이버에 직접 로그인해 주세요.</p>
+</div>
+<script>
+const $=id=>document.getElementById(id),api=()=>window.pywebview.api;
+const NAMES={text:'문단',images:'사진',gif:'GIF',video:'동영상',map:'지도',divider:'구분선',quote:'인용구'};
+window.addLog=m=>{const l=$('log');l.innerHTML+=m.replace(/</g,'&lt;')+'<br>';l.scrollTop=l.scrollHeight};
+window.done=r=>{$('startBtn').textContent='자동 작성 시작 (임시저장까지)';if(r&&r.fail.length)addLog('실패 항목은 결과 폴더의 upload_log.txt와 스크린샷을 확인하세요.')};
+function summary(r){$('path').textContent=r.folder;$('summary').innerHTML=`<div class="title">${r.title||'(제목 없음)'}</div><div class="chips">${Object.entries(r.counts).map(([k,v])=>`<span class="chip">${NAMES[k]||k} ${v}</span>`).join('')}<span class="chip">태그 ${r.tags.length}</span></div>`}
+$('pickBtn').onclick=async()=>{const r=await api().choose_folder();if(r.ok)summary(r);else if(r.error)addLog(r.error)};
+$('startBtn').onclick=async()=>{const r=await api().start();if(!r.ok)return addLog(r.error);$('startBtn').textContent='진행 중…'};
+$('stopBtn').onclick=()=>api().stop();$('outBtn').onclick=()=>api().open_out();
+$('blogId').onchange=e=>api().set_option('blog_id',e.target.value.trim());
+$('speed').onchange=e=>api().set_option('speed',parseFloat(e.target.value));
+$('minimize').onchange=e=>api().set_option('minimize',e.target.value==='1');
+window.addEventListener('pywebviewready',async()=>{
+ const s=await api().state();$('ver').textContent='버전 '+s.version;$('blogId').value=s.blog_id;$('speed').value=String(s.speed);$('minimize').value=s.minimize?'1':'0';
+ if(s.last_folder)$('path').textContent=s.last_folder;
+ const u=await api().check_update();if(u.available){$('upd').style.display='flex';$('updText').textContent=`새 버전 ${u.latest}이 있습니다.`;$('updBtn').onclick=()=>api().do_update(u.url)}
+});
+</script></body></html>

@@ -2,7 +2,7 @@ name: build-exe
 on:
   push:
     branches: [main]
-    paths: ["app/**", "requirements.txt", ".github/workflows/**"]
+    paths: ["app/**", "requirements.txt", ".github/workflows/build.yml"]
   workflow_dispatch:
 permissions:
   contents: write

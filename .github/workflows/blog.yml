@@ -1,0 +1,32 @@
+name: build-blog-exe
+on:
+  push:
+    branches: [main]
+    paths: ["blog/*.py", "blog/ui/**", "blog/requirements.txt", ".github/workflows/blog.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r blog/requirements.txt
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "v=$(python -c "import sys;sys.path.insert(0,'blog');import version;print(version.VERSION)")" >> $GITHUB_OUTPUT
+      - name: Build
+        working-directory: blog
+        run: pyinstaller --noconfirm --onefile --windowed --name MazziBlogUploader --add-data "ui;ui" --add-data "selectors.json;." --collect-all playwright main.py
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: blog-v${{ steps.ver.outputs.v }}
+          name: 블로그 자동 작성기 ${{ steps.ver.outputs.v }}
+          files: blog/dist/MazziBlogUploader.exe
+          make_latest: false
+          generate_release_notes: true

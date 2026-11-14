@@ -9,7 +9,7 @@ from pathlib import Path
 
 import requests
 
-from version import VERSION, REPO
+from version import VERSION, REPO, TAG_PREFIX, ASSET
 
 
 def _ver(s: str) -> tuple:
@@ -17,17 +17,22 @@ def _ver(s: str) -> tuple:
 
 
 def check() -> dict:
+    """같은 저장소에 프로그램이 여럿이라 태그 접두어와 파일 이름으로 내 릴리스만 고른다."""
     try:
-        r = requests.get(f"https://api.github.com/repos/{REPO}/releases/latest", timeout=8)
+        r = requests.get(f"https://api.github.com/repos/{REPO}/releases?per_page=30", timeout=8)
         if r.status_code != 200:
             return {"available": False, "current": VERSION}
-        rel = r.json()
-        latest = rel.get("tag_name", "v0")
-        asset = next((a for a in rel.get("assets", []) if a["name"].lower().endswith(".exe")), None)
+        rels = [x for x in r.json() if x.get("tag_name", "").startswith(TAG_PREFIX)
+                and x["tag_name"][len(TAG_PREFIX):][:1].isdigit()]
+        if not rels:
+            return {"available": False, "current": VERSION}
+        rel = max(rels, key=lambda x: _ver(x["tag_name"][len(TAG_PREFIX):]))
+        latest = rel["tag_name"][len(TAG_PREFIX):]
+        asset = next((a for a in rel.get("assets", []) if a["name"] == ASSET), None)
         return {
             "available": bool(asset) and _ver(latest) > _ver(VERSION),
             "current": VERSION,
-            "latest": latest.lstrip("v"),
+            "latest": latest,
             "notes": rel.get("body", "")[:400],
             "url": asset["browser_download_url"] if asset else "",
         }
