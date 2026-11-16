@@ -62,10 +62,31 @@ def task_no(task: str) -> str:
     return task.split(" ")[0] if task else ""
 
 
-def bimok_folder(bimok: str) -> str:
-    """'4. 연구재료비' -> '4_연구재료비'"""
-    m = re.match(r"\s*(\d+)\s*[.)]?\s*(.+)", bimok or "")
-    return safe(f"{m.group(1)}_{m.group(2)}") if m else safe(bimok or "기타")
+def task_folder(task: str) -> str:
+    """'1-2 권인찬' -> '[1-2]_권인찬' (기존 40_연구비집행 폴더 규칙)"""
+    parts = (task or "").split(" ", 1)
+    if len(parts) == 2:
+        return safe(f"[{parts[0]}]_{parts[1].replace(' ', '')}")
+    return safe(task or "기타")
+
+
+# 시트 예산항목 → 기존 PC 비목 폴더
+BIMOK_FOLDERS = [
+    ("학생인건비", "1_인건비"),
+    ("인건비", "1_인건비"),
+    ("연구활동비", "2_연구활동비"),
+    ("연구시설장비비", "3_연구시설장비비"),
+    ("연구재료비", "4_연구재료비"),
+]
+
+
+def bimok_folder(name: str) -> str:
+    """예산항목 또는 비목('4. 연구재료비', '연구활동비') -> 기존 폴더명. 해당 없으면 0_기타"""
+    n = re.sub(r"[\s\d.()_]", "", name or "")
+    for key, folder in BIMOK_FOLDERS:
+        if key in n:
+            return folder
+    return "0_기타"
 
 
 def case_folder_name(d: dict) -> str:
@@ -103,21 +124,19 @@ def usage_text(d: dict) -> str:
 
 # ---------- 폴더 ----------
 def ensure_structure(root: str, settings: dict) -> int:
-    """과제 / 비목 폴더를 한 번에 만든다. 만든 폴더 수 반환."""
+    """과제 폴더만 없을 때 만든다(기존 [1-1]_공득조 규칙). 비목 폴더는 저장할 때 필요한 것만 만든다."""
     made = 0
-    bimoks = sorted({s["bimok"] for s in settings.get("semoks", []) if s.get("bimok")})
     for t in settings.get("tasks", []):
-        for b in bimoks:
-            p = Path(root) / safe(t["name"]) / bimok_folder(b)
-            if not p.exists():
-                p.mkdir(parents=True, exist_ok=True)
-                made += 1
+        p = Path(root) / task_folder(t["name"])
+        if not p.exists():
+            p.mkdir(parents=True, exist_ok=True)
+            made += 1
     return made
 
 
 def save_case(root: str, d: dict, files: list[dict]) -> dict:
     """건별 폴더를 만들고 파일을 규칙대로 복사한다."""
-    base = Path(root) / safe(d["task"]) / bimok_folder(d.get("bimok", ""))
+    base = Path(root) / task_folder(d["task"]) / bimok_folder(d.get("budget_item") or d.get("bimok", ""))
     folder = base / case_folder_name(d)
     folder.mkdir(parents=True, exist_ok=True)
     saved = []
@@ -135,7 +154,7 @@ def save_case(root: str, d: dict, files: list[dict]) -> dict:
 
 
 def find_case_folder(root: str, task: str, iso_date: str, keyword: str) -> Path | None:
-    tdir = Path(root) / safe(task)
+    tdir = Path(root) / task_folder(task)
     if not tdir.exists():
         return None
     prefix = yymmdd(iso_date) if iso_date else ""

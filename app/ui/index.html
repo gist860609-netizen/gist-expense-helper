@@ -171,7 +171,8 @@ function opts(sel,list,val){sel.innerHTML=list.map(v=>`<option${v===val?' select
 function yymmdd(iso){return (iso||'').replace(/-/g,'').slice(2,8)}
 function clean(s){return (s||'').replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim()}
 function semokInfo(){return (S.settings.semoks||[]).find(x=>x.semok===$('semok').value)||{}}
-function bimokFolder(b){const m=(b||'').match(/(\d+)\s*[.)]?\s*(.+)/);return m?`${m[1]}_${m[2]}`:(b||'기타')}
+function bimokFolder(b){const n=(b||'').replace(/[\s\d.()_]/g,'');for(const [k,f] of [['학생인건비','1_인건비'],['인건비','1_인건비'],['연구활동비','2_연구활동비'],['연구시설장비비','3_연구시설장비비'],['연구재료비','4_연구재료비']]){if(n.includes(k))return f}return '0_기타'}
+function taskFolder(t){const p=(t||'').split(' ');return p.length>1?`[${p[0]}]_${p.slice(1).join('')}`:t}
 
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x===b));
@@ -202,7 +203,7 @@ function form(){
 function preview(){
   const d=form(),si=semokInfo(),no=(d.task||'').split(' ')[0],bi=si.budget_item||d.semok;
   const core=d.item?`${d.vendor}_${d.item}`:d.vendor;
-  $('pvFolder').textContent=d.task?`${d.task} / ${bimokFolder(si.bimok)} / ${clean(`${yymmdd(d.date)}_${core}(${won(d.amount)}원)`)}`:'-';
+  $('pvFolder').textContent=d.task?`${taskFolder(d.task)} / ${bimokFolder(si.budget_item||si.bimok)} / ${clean(`${yymmdd(d.date)}_${core}(${won(d.amount)}원)`)}`:'-';
   $('pvFile').innerHTML=files.length?files.map(f=>clean(`(${f.doc_type}) [${no}] ${bi}-${core}(${yymmdd(d.date)})`)+'.'+f.filename.split('.').pop()).join('<br>'):'-';
   let c=`${d.vendor} ${d.item}`.trim();if(c.length>22){const cut=c.slice(0,22);c=cut.slice(8).includes(' ')?cut.slice(0,cut.lastIndexOf(' ')):cut.trim()}
   $('pvTitle').textContent=d.task?`[${no}] ${bi}(${yymmdd(d.date)})_${c}`:'-';
