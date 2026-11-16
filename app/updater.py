@@ -60,5 +60,9 @@ def apply(url: str) -> None:
         'del "%~f0"\r\n',
         encoding="cp949",
     )
-    subprocess.Popen(["cmd", "/c", str(bat)], creationflags=0x08000000)
+    # 새 exe가 이전 프로세스의 임시폴더(_MEI…)를 이어받지 않도록 환경을 초기화해서 실행
+    env = {k: v for k, v in os.environ.items()
+           if not (k.startswith("_MEI") or k.startswith("_PYI") or k == "TCL_LIBRARY" or k == "TK_LIBRARY")}
+    env["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    subprocess.Popen(["cmd", "/c", str(bat)], creationflags=0x08000000, env=env)
     os._exit(0)
