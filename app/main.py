@@ -33,6 +33,8 @@ class Api:
             "version": VERSION,
             "root": self.cfg["root"],
             "connected": bool(self.cfg["script_url"] and self.cfg["token"]),
+            "script_url": self.cfg["script_url"],
+            "token_masked": (self.cfg["token"][:4] + "••••" + self.cfg["token"][-2:]) if self.cfg["token"] else "",
             "settings": s,
         }
 
@@ -48,7 +50,11 @@ class Api:
         return {"ok": True, "root": self.cfg["root"], "made": made}
 
     def connect(self, url: str, token: str):
-        self.cfg["script_url"], self.cfg["token"] = url.strip(), token.strip()
+        url, token = url.strip(), token.strip()
+        if url:
+            self.cfg["script_url"] = url
+        if token and "••" not in token:
+            self.cfg["token"] = token
         core.save_config(self.cfg)
         return self.refresh_settings()
 
@@ -184,6 +190,9 @@ def main():
         width=1180, height=820, min_size=(980, 680))
     api.window = window
     window.events.loaded += lambda: on_loaded(window, api)
+    # 창을 닫을 때 진행 중인 요청(시트·업데이트 확인)이나 내부 이벤트 처리 때문에
+    # '응답하지 않음'이 뜨지 않도록, 설정은 이미 저장돼 있으므로 즉시 종료한다
+    window.events.closing += lambda: os._exit(0)
     webview.start()
 
 

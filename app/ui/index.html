@@ -190,6 +190,7 @@ function render(){
   $('connDot').className='dot'+(S.connected?' ok':'');$('connText').textContent=S.connected?'시트 연결됨':'시트 미연결';
   $('rootText').textContent=S.root?('폴더 · '+S.root.split(/[\\/]/).pop()):'상위 폴더 미지정';
   $('verText').textContent='버전 '+S.version;$('rootIn').value=S.root||'';
+  if(S.script_url&&!$('urlIn').value)$('urlIn').value=S.script_url;if(S.token_masked&&!$('tokenIn').value)$('tokenIn').value=S.token_masked;
   $('infoText').textContent=`현재 버전 ${S.version}. 실행할 때마다 새 버전을 확인합니다.`;
   $('settingsInfo').textContent=st.tasks?`과제 ${st.tasks.length}개 · 세목 ${st.semoks.length}개`:'아직 불러오지 않았습니다.';
   preview();
@@ -258,7 +259,7 @@ function stepCount(it){const z=['미신청','견적서','주문서','1차검수'
 async function loadPending(){
   if(!S.connected)return;
   $('list').innerHTML='<div class="empty">불러오는 중…</div>';
-  const r=await api().pending();if(!r.ok){$('list').innerHTML=`<div class="empty">${r.error}</div>`;return}
+  const r=await api().pending();if(!r.ok){$('list').innerHTML=`<div class="empty">불러오기 실패: ${r.error}</div>`;$('pendingCount').textContent='!';return}
   items=r.items;$('pendingCount').textContent=items.length;drawList();
 }
 function drawList(){

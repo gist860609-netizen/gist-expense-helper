@@ -125,6 +125,11 @@ def main():
     api = Api()
     api.window = webview.create_window(f"블로그 자동 작성기 {VERSION}", str(resource("ui/index.html")),
                                        js_api=api, width=760, height=760, min_size=(640, 640))
+    def on_closing():
+        if api.writer:
+            api.writer.stop_flag = True
+        os._exit(0)
+    api.window.events.closing += on_closing
     webview.start()
 
 
