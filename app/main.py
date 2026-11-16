@@ -189,7 +189,7 @@ def main():
         f"지출 건 도우미 {VERSION}", resource("ui/index.html"), js_api=api,
         width=1180, height=820, min_size=(980, 680))
     api.window = window
-    window.events.loaded += lambda: on_loaded(window, api)
+    # window.dom 이벤트(드래그앤드롭) 등록이 일부 PC에서 창을 멈추게 해 사용하지 않음 — 파일은 클릭해서 선택
     # 창을 닫을 때 진행 중인 요청(시트·업데이트 확인)이나 내부 이벤트 처리 때문에
     # '응답하지 않음'이 뜨지 않도록, 설정은 이미 저장돼 있으므로 즉시 종료한다
     window.events.closing += lambda: os._exit(0)
